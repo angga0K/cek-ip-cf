@@ -8,7 +8,7 @@ async function checkIPs() {
 
     for (const ip of ipList) {
         try {
-            const response = await fetch(`https://api.allorigins.win/raw?url=https://api-cek-ip.anggaalfa.my.id/?ip=${ip}`);
+            const response = await fetch(`http://api.allorigins.win/raw?url=http://api-cek-ip.anggaalfa.my.id/?ip=${ip}`);
             const data = await response.json();
 
             // Tentukan nilai ProxyVPN
