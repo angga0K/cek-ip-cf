@@ -9,58 +9,76 @@ async function checkIPs() {
     }
 
     let results = [];
+    document.getElementById('ipData').innerHTML = ''; // Kosongkan hasil sebelumnya
 
     // Tampilkan spinner selama proses berlangsung
     document.querySelector('.spinner').style.display = 'block';
 
     for (const ip of ipList) {
-        try {
-            const response = await fetch(`https://api.allorigins.win/raw?url=https://api-cek-ip.anggaalfa.my.id/?ip=${ip}`);
-            const data = await response.json();
+        let success = false;
+        let attempts = 0;
+        let maxAttempts = 3;
 
-            // Tentukan nilai ProxyVPN
-            let proxyVPN = 'DEAD';
-            if (data.TYPE && data.TYPE.includes('VPN')) {
-                proxyVPN = 'ACTIVE';
-            }
+        while (!success && attempts < maxAttempts) {
+            attempts++;
+            try {
+                const response = await fetch(`https://api.allorigins.win/raw?url=https://api-cek-ip.anggaalfa.my.id/?ip=${ip}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-            // Ganti STATUSPROXY dengan ProxyVPN dan hilangkan ProxyHTTP/S
-            const result = `
-                <div class="ip-box">
-                    <div class="ip-header">IP: ${ip}</div>
-                    <div class="ip-info">
-                        ${Object.entries(data).filter(([key]) => key !== 'REGION' && key !== 'STATUSPROXY').map(([key, value]) => `
+                const data = await response.json();
+
+                // Tentukan nilai ProxyVPN
+                let proxyVPN = 'DEAD';
+                if (data.TYPE && data.TYPE.includes('VPN')) {
+                    proxyVPN = 'ACTIVE';
+                }
+
+                // Ganti STATUSPROXY dengan ProxyVPN dan hilangkan ProxyHTTP/S
+                const result = `
+                    <div class="ip-box">
+                        <div class="ip-header">IP: ${ip}</div>
+                        <div class="ip-info">
+                            ${Object.entries(data).filter(([key]) => key !== 'REGION' && key !== 'STATUSPROXY').map(([key, value]) => `
+                                <div class="output-item">
+                                    <span class="output-key">${key}:</span>
+                                    <span class="output-value">${value}</span>
+                                </div>
+                            `).join('')}
                             <div class="output-item">
-                                <span class="output-key">${key}:</span>
-                                <span class="output-value">${value}</span>
+                                <span class="output-key">ProxyVPN:</span>
+                                <span class="output-value">${proxyVPN}</span>
                             </div>
-                        `).join('')}
-                        <div class="output-item">
-                            <span class="output-key">ProxyVPN:</span>
-                            <span class="output-value">${proxyVPN}</span>
                         </div>
                     </div>
-                </div>
-            `;
-            results.push(result);
-            document.getElementById('ipData').innerHTML += result;
+                `;
+                results.push(result);
+                document.getElementById('ipData').innerHTML += result;
 
-            // Berikan delay sebelum melanjutkan ke IP berikutnya
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay 1 detik
-        } catch (error) {
-            const errorResult = `
-                <div class="ip-box">
-                    <div class="ip-header">IP: ${ip}</div>
-                    <div class="ip-info">
-                        <div class="output-item">
-                            <span class="output-key">Error:</span>
-                            <span class="output-value">${error.message}</span>
+                success = true; // Berhasil mendapatkan data, keluar dari loop
+
+                // Berikan delay sebelum melanjutkan ke IP berikutnya
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Delay 1.5 detik
+            } catch (error) {
+                console.error(`Attempt ${attempts} failed for IP: ${ip}, Error: ${error.message}`);
+                if (attempts === maxAttempts) {
+                    const errorResult = `
+                        <div class="ip-box">
+                            <div class="ip-header">IP: ${ip}</div>
+                            <div class="ip-info">
+                                <div class="output-item">
+                                    <span class="output-key">Error:</span>
+                                    <span class="output-value">${error.message}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `;
-            results.push(errorResult);
-            document.getElementById('ipData').innerHTML += errorResult;
+                    `;
+                    results.push(errorResult);
+                    document.getElementById('ipData').innerHTML += errorResult;
+                }
+            }
         }
     }
 
@@ -109,4 +127,5 @@ function downloadResults() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
+        }
+        
